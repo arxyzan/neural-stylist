@@ -4,3 +4,4 @@ datasets
 *.mp4
 data/
 *.pyc
+results/
