@@ -1,0 +1,6 @@
+__pycache__
+datasets
+/weights/*
+*.mp4
+data/
+*.pyc
