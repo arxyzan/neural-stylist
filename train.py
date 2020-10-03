@@ -6,10 +6,11 @@ from modules.utils import tensor_to_image, load_img, create_folder, clip_0_1
 from modules.vgg19 import preprocess_input, VGG19
 from modules.forward import feed_forward
 
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-assert len(physical_devices) > 0, "Not enough GPU hardware devices available"
-config = tf.config.experimental.set_memory_growth(physical_devices[0], True)
 
+
+gpu = tf.config.experimental.list_physical_devices('GPU')[0]
+tf.config.experimental.set_memory_growth(gpu, True)
+tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2048)])
 
 def vgg_layers(layer_names):
     vgg = VGG19(include_top = False, weights = 'imagenet')
