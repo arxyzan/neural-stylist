@@ -38,7 +38,7 @@ def main():
     parser.add_argument('--debug', required=False, type=bool,
                          metavar=False,
                          help='Whether to print the loss',
-                         default=False)
+                         default=True)
     parser.add_argument('--dataset', required=False,
                          metavar=DATASET_PATH,
                          default=DATASET_PATH)
