@@ -19,7 +19,7 @@ TV_WEIGHT = 2e2
 
 LEARNING_RATE = 1e-3
 NUM_EPOCHS = 2
-BATCH_SIZE = 4
+BATCH_SIZE = 2
 
 STYLE_IMAGE = './images/style/udnie.jpg'
 CONTENT_IMAGE = './images/content/chicago.jpg'
