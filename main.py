@@ -13,13 +13,13 @@ import argparse
 from train import trainer
 from evaluate import transfer
 
-CONTENT_WEIGHT = 6e0
-STYLE_WEIGHT = 2e-3
-TV_WEIGHT = 6e2
+CONTENT_WEIGHT = 7.5e0
+STYLE_WEIGHT = 1e2
+TV_WEIGHT = 2e2
 
 LEARNING_RATE = 1e-3
 NUM_EPOCHS = 2
-BATCH_SIZE = 2
+BATCH_SIZE = 4
 
 STYLE_IMAGE = './images/style/udnie.jpg'
 CONTENT_IMAGE = './images/content/chicago.jpg'
