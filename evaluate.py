@@ -9,7 +9,7 @@ session = tf.compat.v1.InteractiveSession(config=config)
 import os
 import cv2
 from argparse import ArgumentParser
-from model import FastTransferModel
+from model import TransferModel
 from utils import read_image, write_image
 
 def get_parser():
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
     check_opts(options)
 
-    model = FastTransferModel()
+    model = TransferModel()
     # init model weight
     ones = tf.ones((1, 256, 256, 3))
     model(ones)

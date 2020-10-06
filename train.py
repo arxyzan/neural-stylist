@@ -3,13 +3,12 @@ from tensorflow import keras
 
 gpu = tf.config.experimental.list_physical_devices('GPU')[0]
 tf.config.experimental.set_memory_growth(gpu, True)
-# tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2500)])
+tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2500)])
 
 import os
 import progressbar
 from argparse import ArgumentParser
-from model import FastTransferModel
-from loss import FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
+from model import TransferModel, FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
 from utils import read_image, write_image, image_loader
 
 DATA_DIR = 'data/train2014'
@@ -123,7 +122,7 @@ if __name__ == '__main__':
     step = data_size_per_epoch * epoch // batch_size
     auto_save_step = step // 100
 
-    transfer_model = FastTransferModel()
+    transfer_model = TransferModel()
     feature_extractor = FeatureExtractor()
     style_targets = feature_extractor(tf.constant(style_image * 255.0))['style']
 
