@@ -1,180 +1,190 @@
 import tensorflow as tf
-import numpy as np
-import os
-
-from modules.utils import tensor_to_image, load_img, create_folder, clip_0_1
-from modules.vgg19 import preprocess_input, VGG19
-from modules.forward import feed_forward
-
-
+from tensorflow import keras
 
 gpu = tf.config.experimental.list_physical_devices('GPU')[0]
 tf.config.experimental.set_memory_growth(gpu, True)
 # tf.config.experimental.set_virtual_device_configuration(gpu, [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=2500)])
 
-def vgg_layers(layer_names):
-    vgg = VGG19(include_top = False, weights = 'imagenet')
-    vgg.trainable = False
+import os
+import progressbar
+from argparse import ArgumentParser
+from model import FastTransferModel
+from loss import FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
+from utils import read_image, write_image, image_loader
 
-    outputs = [vgg.get_layer(name).output for name in layer_names]
+DATA_DIR = 'data/train2014'
 
-    model = tf.keras.Model([vgg.input], outputs)
-    return model
+EPOCH = 2
+BATCH_SIZE = 4
+LEARNING_RATE = 1e-3
 
-def gram_matrix(features, normalize = True):
-    batch_size , height, width, filters = features.shape
-    features = tf.reshape(features, (batch_size, height*width, filters))
-
-    tran_f = tf.transpose(features, perm=[0,2,1])
-    gram = tf.matmul(tran_f, features)
-    if normalize:
-        gram /= tf.cast(height*width, tf.float32)
-
-    return gram
-
-def style_loss(style_outputs, style_target):
-    style_loss = tf.add_n([tf.reduce_mean((style_outputs[name]-style_target[name])**2)
-                        for name in style_outputs.keys()])
-
-    return style_loss / len(style_outputs)
-
-def content_loss(content_outputs, content_target):
-    content_loss = tf.add_n([tf.reduce_mean((content_outputs[name]-content_target[name])**2)
-                            for name in content_outputs.keys()])
-
-    return content_loss / len(content_outputs)
-
-def total_variation_loss(img):
-    x_var = img[:,:,1:,:] - img[:,:,:-1,:]
-    y_var = img[:,1:,:,:] - img[:,:-1,:,:]
-
-    return tf.reduce_mean(tf.square(x_var)) + tf.reduce_mean(tf.square(y_var))
-
-class StyleContentModel(tf.keras.models.Model):
-    def __init__(self, style_layers, content_layers):
-        super(StyleContentModel, self).__init__()
-        self.vgg = vgg_layers(style_layers + content_layers)
-        self.content_layers = content_layers
-        self.style_layers = style_layers
-        self.num_content_layers = len(content_layers)
-        self.num_style_layers = len(style_layers)
-        self.vgg.trainable = False
-
-    def call(self, inputs):
-        preprocessed_input = preprocess_input(inputs)
-        outputs = self.vgg(preprocessed_input)
-        style_outputs, content_outputs = (outputs[:self.num_style_layers],
-                                          outputs[self.num_style_layers:])
-
-        # Compute the gram_matrix
-        style_outputs = [gram_matrix(style_output) for style_output in style_outputs]
-
-        # Features that extracted by VGG
-        style_dict = {style_name:value for style_name, value in zip(self.style_layers, style_outputs)}
-        content_dict = {content_name:value for content_name, value in zip(self.content_layers, content_outputs)}
-
-        return {'content':content_dict, 'style':style_dict}
+STYLE_WEIGHT = 1e0
+CONTENT_WEIGHT = 1e4
+TV_WEIGHT = 1e6
 
 
-def trainer(style_file, dataset_path, weights_path, content_weight, style_weight, 
-            tv_weight, learning_rate, batch_size, epochs, debug):
+def get_parser():
+    parser = ArgumentParser()
+    
+    parser.add_argument('--style-image', type=str,
+                        dest='style_image', help='style image path',
+                        metavar='STYLE_PATH', required=True)
 
-    # Setup the given layers
-    content_layers = ['block4_conv2']
+    parser.add_argument('--test-image', type=str,
+                        dest='test_image', help='test image path, to check the model transfering effect',
+                        metavar='TEST_PATH', required=True)
 
-    style_layers = ['block1_conv1',
-                    'block2_conv1',
-                    'block3_conv1',
-                    'block4_conv1',
-                    'block5_conv1']
+    parser.add_argument('--output', type=str,
+                        dest='output', help='dir to save model and related output',
+                        metavar='OUTPUT_DIR', required=True)
 
-    # Build Feed-forward transformer
-    network = feed_forward()
+    parser.add_argument('--data', type=str,
+                        dest='data', help='training images dir (default %(default)s)',
+                        metavar='DATA_DIR', default=DATA_DIR)
 
-    # Build VGG-19 Loss network
-    extractor = StyleContentModel(style_layers, content_layers)
+    parser.add_argument('--epoch', type=int,
+                        dest='epoch', help='num epochs (default %(default)s)',
+                        metavar='EPOCH', default=EPOCH)
 
-    # Load style target image
-    style_image = load_img(style_file, resize=False)
+    parser.add_argument('--batch-size', type=int,
+                        dest='batch_size', help='batch size (default %(default)s)',
+                        metavar='BATCH_SIZE', default=BATCH_SIZE)
 
-    # Initialize content target images
-    batch_shape = (batch_size, 256, 256, 3)
-    X_batch = np.zeros(batch_shape, dtype=np.float32)
+    parser.add_argument('--learning-rate', type=float,
+                        dest='learning_rate', help='learning rate (default %(default)s)',
+                        metavar='LEARNING_RATE', default=LEARNING_RATE)
 
-    # Extract style target 
-    style_target = extractor(style_image*255.0)['style']
+    parser.add_argument('--style-weight', type=float,
+                        dest='style_weight', help='style weight (default %(default)s)',
+                        metavar='STYLE_WEIGHT', default=STYLE_WEIGHT)
 
-    # Build optimizer
-    opt = tf.keras.optimizers.Adam(learning_rate=learning_rate)
+    parser.add_argument('--content-weight', type=float,
+                        dest='content_weight', help='content weight (default %(default)s)',
+                        metavar='CONTENT_WEIGHT', default=CONTENT_WEIGHT)
+    
+    parser.add_argument('--tv-weight', type=float,
+                        dest='tv_weight', help='total variation regularization weight (default %(default)s)',
+                        metavar='TV_WEIGHT', default=TV_WEIGHT)
+    
+    return parser
 
-    loss_metric = tf.keras.metrics.Mean()
-    sloss_metric = tf.keras.metrics.Mean()
-    closs_metric = tf.keras.metrics.Mean()
-    tloss_metric = tf.keras.metrics.Mean()
 
+def check_opts(opts):
+    assert os.path.exists(opts.style_image), "style image not found!"
+    assert os.path.exists(opts.test_image), "test image not found!"
+    assert not os.path.exists(opts.output), "output dir already exists! we can't overwrite it."
+    assert os.path.exists(opts.data), "training data not found!"
+    
+    assert opts.epoch > 0
+    assert opts.batch_size > 0
+    assert opts.learning_rate >= 0
+    assert opts.content_weight >= 0
+    assert opts.style_weight >= 0
+    assert opts.tv_weight >= 0
+
+
+def get_progress_bar():
+    widgets = [
+        progressbar.Percentage(),
+        ' ', progressbar.Bar(left='[', right=']'),
+        ' ', progressbar.AnimatedMarker(),
+        ' ', progressbar.ETA(),
+        ', step ',
+        progressbar.SimpleProgress(),
+    ]
+    
+    return progressbar.ProgressBar(max_value=step, widgets=widgets)
+
+
+if __name__ == '__main__':
+    parser = get_parser()
+    options = parser.parse_args()
+    check_opts(options)
+
+    os.makedirs(options.output)
+
+    style_image = read_image(options.style_image, as_4d_tensor=True)
+    test_img = read_image(options.test_image, as_4d_tensor=True)
+
+    epoch = options.epoch
+    batch_size = options.batch_size
+    learning_rate = options.learning_rate
+
+    # 关键在于，使 3 者的 loss 次方保持在大致同等状态
+    # 这样才会同等的开始训练，下降，不会出现 domainated 的情况
+    style_weight = options.style_weight
+    content_weight = options.content_weight
+    tv_weight = options.tv_weight
+    
+    dataset = tf.data.Dataset.from_generator(image_loader, tf.float32, args=[options.data, (256, 256, 3)])
+    optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
+
+    data_size_per_epoch = 8e4
+    step = data_size_per_epoch * epoch // batch_size
+    auto_save_step = step // 100
+
+    transfer_model = FastTransferModel()
+    feature_extractor = FeatureExtractor()
+    style_targets = feature_extractor(tf.constant(style_image * 255.0))['style']
+
+    style_loss_metric = keras.metrics.Mean(name='style_loss')
+    content_loss_metric = keras.metrics.Mean(name='content_loss')
+    tv_loss_metric = keras.metrics.Mean(name='tv_loss')
+
+    summary_writer = tf.summary.create_file_writer(os.path.join(options.output, 'logs'))
+
+    bar = get_progress_bar()
 
     @tf.function()
-    def train_step(X_batch):
+    def train_step(X):
         with tf.GradientTape() as tape:
+            content_targets = feature_extractor(X * 255.0)['content']
 
-            content_target = extractor(X_batch*255.0)['content']
-            image = network(X_batch)
-            outputs = extractor(image)
+            outputs = transfer_model(X)
             
-            s_loss = style_weight * style_loss(outputs['style'], style_target)
-            c_loss = content_weight * content_loss(outputs['content'], content_target)
-            t_loss = tv_weight * total_variation_loss(image)
-            loss = s_loss + c_loss + t_loss
+            features = feature_extractor(outputs)
+            style_features = features['style']
+            content_features = features['content']
 
-        grad = tape.gradient(loss, network.trainable_variables)
-        opt.apply_gradients(zip(grad, network.trainable_variables))
+            style_loss = style_weight * get_style_loss(style_targets, style_features)
+            content_loss = content_weight * get_content_loss(content_targets, content_features)
+            tv_loss = tv_weight * get_tv_loss(outputs)
 
-        loss_metric(loss)
-        sloss_metric(s_loss)
-        closs_metric(c_loss)
-        tloss_metric(t_loss)
-
-
-    train_dataset = tf.data.Dataset.list_files(dataset_path + '/*.jpg')
-    train_dataset = train_dataset.map(load_img,
-                                      num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    train_dataset = train_dataset.shuffle(1024)
-    train_dataset = train_dataset.batch(batch_size, drop_remainder=True)
-
-
-    import time
-    start = time.time()
-
-    for e in range(epochs):
-        print('Epoch {}'.format(e))
-        iteration = 0
-
-        for img in train_dataset:
-
-            for j, img_p in enumerate(img):
-                X_batch[j] = img_p
-
-            iteration += 1
+            loss = style_loss + content_loss + tv_loss
             
-            train_step(X_batch)
+        grad = tape.gradient(loss, transfer_model.trainable_variables)
+        optimizer.apply_gradients(zip(grad, transfer_model.trainable_variables))
 
-            if iteration % 3000 == 0:
-                # Save checkpoints
-                network.save_weights(weights_path, save_format='tf')
-                print('=====================================')
-                print('            Weights saved!           ')
-                print('=====================================\n')
+        style_loss_metric(style_loss)
+        content_loss_metric(content_loss)
+        tv_loss_metric(tv_loss)
 
-                if debug:
-                    print('step %s: loss = %s' % (iteration, loss_metric.result()))
-                    print('s_loss={}, c_loss={}, t_loss={}'.format(sloss_metric.result(), closs_metric.result(), tloss_metric.result()))
+    bar.start()
+    step_counter = 0
 
-    end = time.time()
-    print("Total time: {:.1f}".format(end-start))
+    for X in dataset.repeat().batch(batch_size):
+        style_loss_metric.reset_states()
+        content_loss_metric.reset_states()
+        tv_loss_metric.reset_states()
+        
+        train_step(X)
+
+        with summary_writer.as_default():
+            tf.summary.scalar('style loss', style_loss_metric.result(), step=step_counter)
+            tf.summary.scalar('content loss', content_loss_metric.result(), step=step_counter)
+            tf.summary.scalar('tv loss', tv_loss_metric.result(), step=step_counter)
+
+        if step_counter % auto_save_step == 0:
+            test_output = transfer_model(test_img)
+            write_image(os.path.join(options.output, '{}.jpg'.format(step_counter // auto_save_step)), test_output[0] / 255.0)
+
+        bar.update(step_counter)
+
+        step_counter += 1
+        if step_counter > step:
+            break
+
+    bar.finish()
+
+    transfer_model.save_weights(os.path.join(options.output, 'weights.h5'))
     
-
-    # Training is done !
-    network.save_weights(weights_path, save_format='tf')
-    print('=====================================')
-    print('             All saved!              ')
-    print('=====================================\n')
