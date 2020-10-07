@@ -71,7 +71,6 @@ def get_parser():
 def check_opts(opts):
     assert os.path.exists(opts.style_image), "style image not found!"
     assert os.path.exists(opts.test_image), "test image not found!"
-    assert not os.path.exists(opts.output), "output dir already exists! we can't overwrite it."
     assert os.path.exists(opts.data), "training data not found!"
     
     assert opts.epoch > 0
