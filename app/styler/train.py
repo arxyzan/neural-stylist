@@ -116,7 +116,7 @@ if __name__ == '__main__':
     dataset = tf.data.Dataset.from_generator(image_loader, tf.float32, args=[options.data, (256, 256, 3)])
     optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
 
-    data_size_per_epoch = 8e4
+    data_size_per_epoch = 8e2
     step = data_size_per_epoch * epoch // batch_size
     auto_save_step = step // 100
 
