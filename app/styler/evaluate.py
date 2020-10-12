@@ -8,35 +8,32 @@ tf.config.experimental.set_memory_growth(gpu, True)
 
 import os
 import cv2
+import json
 from argparse import ArgumentParser
 from model import TransferModel
-from utils import read_image, write_image
+from utils import read_image, write_image, compute_size
 
 def get_parser():
     parser = ArgumentParser()
+
+    parser.add_argument('--config-file', type=str,
+                    dest='config_file', help='style config',
+                    metavar='CONFIG_PATH', required=True)
     
-    parser.add_argument('--content', type=str,
-                        dest='content', help='content path to stylish',
+    parser.add_argument('--input', type=str,
+                        dest='input', help='content path to stylish',
                         metavar='CONTENT_PATH', required=True)
 
     parser.add_argument('--output', type=str,
                         dest='output', help='output path to save styled result (jpg for image, avi for video)',
                         metavar='OUTPUT_PATH', required=True)
 
-    parser.add_argument('--type', type=str,
-                        dest='type', help='content media type (image or video)', choices=['image', 'video'],
-                        metavar='TYPE', required=True)
-
-    parser.add_argument('--weight', type=str,
-                        dest='weight', help='model weight path',
-                        metavar='WEIGHT', required=True)
-
     return parser
 
 
 def check_opts(opts):
-    assert os.path.exists(opts.content), "content not found!"
-    assert os.path.exists(opts.weight), "weight not found!"
+    assert os.path.exists(opts.config_file), "config not found!"
+    assert os.path.exists(opts.input), "input image not found!"
 
 
 if __name__ == '__main__':
@@ -44,20 +41,24 @@ if __name__ == '__main__':
     options = parser.parse_args()
     check_opts(options)
 
+    with open(options.config_file) as f:
+        config = json.load(f)
+    size = compute_size(config)
+
     model = TransferModel()
     # init model weight
     ones = tf.ones((1, 256, 256, 3))
     model(ones)
 
-    model.load_weights(options.weight)
+    model.load_weights(config['modelPath'])
 
     if options.type == 'image':
-        content = read_image(options.content, as_4d_tensor=True)
+        content = read_image(options.input, as_4d_tensor=True, size=size)
         styled_output = model(content)
         write_image(options.output, styled_output[0] / 255.0)
 
     elif options.type == 'video':
-        capture = cv2.VideoCapture(options.content)
+        capture = cv2.VideoCapture(options.input)
         fps = capture.get(cv2.CAP_PROP_FPS)
         size = (
             int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)),

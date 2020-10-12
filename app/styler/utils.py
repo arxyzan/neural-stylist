@@ -4,7 +4,7 @@ from PIL import Image
 
 def compute_size(config):
     style_path = config['styleImagePath']
-    content_path = config['contentImagePath']
+    content_path = config['testImagePath']
     style = Image.open(style_path)
     content = Image.open(content_path)
     style_w, style_h = style.size

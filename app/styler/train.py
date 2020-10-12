@@ -7,6 +7,7 @@ tf.config.experimental.set_memory_growth(gpu, True)
 
 import os
 import progressbar
+from shutil import rmtree
 import json
 from argparse import ArgumentParser
 from model import TransferModel, FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
@@ -25,64 +26,15 @@ TV_WEIGHT = 1e6
 
 def get_parser():
     parser = ArgumentParser()
-    
-    # parser.add_argument('--style-image', type=str,
-    #                     dest='style_image', help='style image path',
-    #                     metavar='STYLE_PATH', required=True)
     parser.add_argument('--config-file', type=str,
                         dest='config_file', help='style config',
                         metavar='CONFIG_PATH', required=True)
-
-    parser.add_argument('--test-image', type=str,
-                        dest='test_image', help='test image path, to check the model transfering effect',
-                        metavar='TEST_PATH', required=True)
-
-    parser.add_argument('--output', type=str,
-                        dest='output', help='dir to save model and related output',
-                        metavar='OUTPUT_DIR', required=True)
-
-    parser.add_argument('--data', type=str,
-                        dest='data', help='training images dir (default %(default)s)',
-                        metavar='DATA_DIR', default=DATA_DIR)
-
-    parser.add_argument('--epoch', type=int,
-                        dest='epoch', help='num epochs (default %(default)s)',
-                        metavar='EPOCH', default=EPOCH)
-
-    parser.add_argument('--batch-size', type=int,
-                        dest='batch_size', help='batch size (default %(default)s)',
-                        metavar='BATCH_SIZE', default=BATCH_SIZE)
-
-    parser.add_argument('--learning-rate', type=float,
-                        dest='learning_rate', help='learning rate (default %(default)s)',
-                        metavar='LEARNING_RATE', default=LEARNING_RATE)
-
-    parser.add_argument('--style-weight', type=float,
-                        dest='style_weight', help='style weight (default %(default)s)',
-                        metavar='STYLE_WEIGHT', default=STYLE_WEIGHT)
-
-    parser.add_argument('--content-weight', type=float,
-                        dest='content_weight', help='content weight (default %(default)s)',
-                        metavar='CONTENT_WEIGHT', default=CONTENT_WEIGHT)
-    
-    parser.add_argument('--tv-weight', type=float,
-                        dest='tv_weight', help='total variation regularization weight (default %(default)s)',
-                        metavar='TV_WEIGHT', default=TV_WEIGHT)
     
     return parser
 
 
 def check_opts(opts):
     assert os.path.exists(opts.config_file), "config not found!"
-    assert os.path.exists(opts.test_image), "test image not found!"
-    assert os.path.exists(opts.data), "training data not found!"
-    
-    assert opts.epoch > 0
-    assert opts.batch_size > 0
-    assert opts.learning_rate >= 0
-    assert opts.content_weight >= 0
-    assert opts.style_weight >= 0
-    assert opts.tv_weight >= 0
 
 
 def get_progress_bar():
@@ -106,21 +58,23 @@ if __name__ == '__main__':
     with open(options.config_file) as f:
         config = json.load(f)
 
-    os.makedirs(options.output)
+    if os.path.exists(config['modelPath']):
+        rmtree(config['modelPath'])
+    os.makedirs(config['modelPath'])
 
     size = compute_size(config)
     style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
-    test_img = read_image(options.test_image, as_4d_tensor=True, size=size)
+    test_img = read_image(config['testImagePath'], as_4d_tensor=True, size=size)
 
-    epoch = options.epoch
-    batch_size = options.batch_size
-    learning_rate = options.learning_rate
+    epoch = config['epoch']
+    batch_size = config['batchSize']
+    learning_rate = config['learningRate']
 
-    style_weight = options.style_weight
-    content_weight = options.content_weight
-    tv_weight = options.tv_weight
+    style_weight = config['styleWeight']
+    content_weight = config['contentWeight']
+    tv_weight = config['tvWeight']
     
-    dataset = tf.data.Dataset.from_generator(image_loader, tf.float32, args=[options.data, (256, 256, 3)])
+    dataset = tf.data.Dataset.from_generator(image_loader, tf.float32, args=[config['datasetPath'], (256, 256, 3)])
     optimizer = tf.optimizers.Adam(learning_rate=learning_rate)
 
     data_size_per_epoch = 4e4
@@ -135,7 +89,7 @@ if __name__ == '__main__':
     content_loss_metric = keras.metrics.Mean(name='content_loss')
     tv_loss_metric = keras.metrics.Mean(name='tv_loss')
 
-    summary_writer = tf.summary.create_file_writer(os.path.join(options.output, 'logs'))
+    summary_writer = tf.summary.create_file_writer(os.path.join(config['modelPath'], 'logs'))
 
     bar = get_progress_bar()
 
@@ -180,7 +134,7 @@ if __name__ == '__main__':
 
         if step_counter % auto_save_step == 0:
             test_output = transfer_model(test_img)
-            write_image(os.path.join(options.output, '{}.jpg'.format(step_counter // auto_save_step)), test_output[0] / 255.0)
+            write_image(os.path.join(config['modelPath'], '{}.jpg'.format(step_counter // auto_save_step)), test_output[0] / 255.0)
 
         bar.update(step_counter)
 
@@ -190,5 +144,5 @@ if __name__ == '__main__':
 
     bar.finish()
 
-    transfer_model.save_weights(os.path.join(options.output, 'weights.h5'))
+    transfer_model.save_weights(os.path.join(config['modelPath'], 'weights.h5'))
     
