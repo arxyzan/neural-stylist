@@ -10,7 +10,7 @@ import progressbar
 import json
 from argparse import ArgumentParser
 from model import TransferModel, FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
-from utils import read_image, write_image, image_loader
+from utils import read_image, write_image, image_loader, compute_size
 
 DATA_DIR = 'data/train2014'
 
@@ -108,8 +108,9 @@ if __name__ == '__main__':
 
     os.makedirs(options.output)
 
+    size = compute_size(config)
     style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
-    test_img = read_image(options.test_image, as_4d_tensor=True)
+    test_img = read_image(options.test_image, as_4d_tensor=True, size=size)
 
     epoch = options.epoch
     batch_size = options.batch_size
