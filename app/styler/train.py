@@ -7,6 +7,7 @@ tf.config.experimental.set_memory_growth(gpu, True)
 
 import os
 import progressbar
+import json
 from argparse import ArgumentParser
 from model import TransferModel, FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
 from utils import read_image, write_image, image_loader
@@ -25,9 +26,12 @@ TV_WEIGHT = 1e6
 def get_parser():
     parser = ArgumentParser()
     
-    parser.add_argument('--style-image', type=str,
-                        dest='style_image', help='style image path',
-                        metavar='STYLE_PATH', required=True)
+    # parser.add_argument('--style-image', type=str,
+    #                     dest='style_image', help='style image path',
+    #                     metavar='STYLE_PATH', required=True)
+    parser.add_argument('--config-file', type=str,
+                        dest='config_file', help='style config',
+                        metavar='CONFIG_PATH', required=True)
 
     parser.add_argument('--test-image', type=str,
                         dest='test_image', help='test image path, to check the model transfering effect',
@@ -69,7 +73,7 @@ def get_parser():
 
 
 def check_opts(opts):
-    assert os.path.exists(opts.style_image), "style image not found!"
+    assert os.path.exists(opts.config_file), "config not found!"
     assert os.path.exists(opts.test_image), "test image not found!"
     assert os.path.exists(opts.data), "training data not found!"
     
@@ -99,9 +103,12 @@ if __name__ == '__main__':
     options = parser.parse_args()
     check_opts(options)
 
+    with open(options.config_file) as f:
+        config = json.load(f)
+
     os.makedirs(options.output)
 
-    style_image = read_image(options.style_image, as_4d_tensor=True)
+    style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
     test_img = read_image(options.test_image, as_4d_tensor=True)
 
     epoch = options.epoch
