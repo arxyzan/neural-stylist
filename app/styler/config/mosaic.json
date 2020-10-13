@@ -1,7 +1,6 @@
 {
     "styleImagePath": "images/style/mosaic.jpg",
     "contentImagePath": "images/content/chicago.jpg",
-    "testImagePath": "images/content/amber.jpg",
     "modelPath": "models/mosaic",
     "datasetPath": "data/train2014",
     "styleWeight": 1e0,

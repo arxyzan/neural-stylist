@@ -64,7 +64,7 @@ if __name__ == '__main__':
 
     size = optimal_size(config['styleImagePath'], config['contentImagePath'])
     style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
-    test_img = read_image(config['testImagePath'], as_4d_tensor=True, size=size)
+    test_img = read_image(config['contentImagePath'], as_4d_tensor=True, size=size)
 
     epoch = config['epoch']
     batch_size = config['batchSize']
