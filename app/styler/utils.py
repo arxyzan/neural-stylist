@@ -8,7 +8,7 @@ def optimal_size(style_path, content_path):
     style_w, style_h = style.size
     content_w, content_h = content.size
     ratio = style_w/content_w
-    return (int(content_w * ratio), int(content_h * ratio))
+    return (int(content_h * ratio), int(content_w * ratio))
 
 
 def read_image(image_path, as_4d_tensor=False, size=None):
