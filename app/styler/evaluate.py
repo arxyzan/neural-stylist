@@ -39,9 +39,10 @@ if __name__ == '__main__':
     parser = get_parser()
     options = parser.parse_args()
     check_opts(options)
+    
 
-    config_path = "models/{}/weights.h5".format(options.model)
-    output_path = "output/{}/".format(options.model)
+    config_path = "config/{}.json".format(options.model)
+    output_path = "output/{}/{}".format(options.model, options.input[-options.input[::-1].find('/'):])
     with open(config_path) as f:
         config = json.load(f)
 
