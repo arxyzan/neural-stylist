@@ -19,9 +19,9 @@ def get_parser():
                         dest='type', help='content media type (image or video)', choices=['image', 'video'],
                         metavar='TYPE', required=True)
 
-    parser.add_argument('--model', type=str,
-                        dest='model', help='model',
-                        metavar='MODEL_NAME', required=True)
+    parser.add_argument('--style', type=str,
+                        dest='style', help='style name',
+                        metavar='STYLE', required=True)
 
     parser.add_argument('--input', type=str,
                         dest='input', help='input image path to style',
@@ -31,7 +31,7 @@ def get_parser():
 
 
 def check_opts(opts):
-    assert os.path.exists("models/{}".format(opts.model)), "config not found!"
+    assert os.path.exists("models/{}".format(opts.style)), "config not found!"
     assert os.path.exists(opts.input), "input image not found!"
 
 
@@ -41,8 +41,8 @@ if __name__ == '__main__':
     check_opts(options)
     
 
-    config_path = "config/{}.json".format(options.model)
-    output_path = "output/{}/{}".format(options.model, options.input[-options.input[::-1].find('/'):])
+    config_path = "config/{}.json".format(options.style)
+    output_path = "output/{}/{}".format(options.style, options.input[-options.input[::-1].find('/'):])
     with open(config_path) as f:
         config = json.load(f)
 
