@@ -55,7 +55,7 @@ if __name__ == '__main__':
     options = parser.parse_args()
     check_opts(options)
 
-    config_path = 'config/{}.json'.format(options.model)
+    config_path = 'config/{}.json'.format(options.style)
     with open(config_path) as f:
         config = json.load(f)
 
