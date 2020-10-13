@@ -1,2 +1,2 @@
-# neural-styler
+# neural-stylist
 Incomplete
