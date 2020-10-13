@@ -16,6 +16,10 @@ from utils import read_image, write_image, compute_size
 def get_parser():
     parser = ArgumentParser()
 
+    parser.add_argument('--type', type=str,
+                        dest='type', help='content media type (image or video)', choices=['image', 'video'],
+                        metavar='TYPE', required=True)
+                        
     parser.add_argument('--config-file', type=str,
                     dest='config_file', help='style config',
                     metavar='CONFIG_PATH', required=True)
