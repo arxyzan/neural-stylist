@@ -2,9 +2,7 @@ import tensorflow as tf
 from imutils import paths
 from PIL import Image
 
-def compute_size(config):
-    style_path = config['styleImagePath']
-    content_path = config['testImagePath']
+def optimal_size(style_path, content_path):
     style = Image.open(style_path)
     content = Image.open(content_path)
     style_w, style_h = style.size

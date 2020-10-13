@@ -2,7 +2,7 @@
     "styleImagePath": "images/style/udnie.jpg",
     "contentImagePath": "images/content/chicago.jpg",
     "testImagePath": "images/content/aryan.jpg",
-    "modelPath": "models/udnie/weights.h5",
+    "modelPath": "models/udnie",
     "datasetPath": "data/train2014",
     "styleWeight": 1e0,
     "contentWeight": 1e4,

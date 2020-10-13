@@ -1,4 +1,13 @@
 {
     "styleImagePath": "images/style/mosaic.jpg",
-    "contentImagePath": "images/content/chicago.jpg"
+    "contentImagePath": "images/content/chicago.jpg",
+    "testImagePath": "images/content/amber.jpg",
+    "modelPath": "models/mosaic",
+    "datasetPath": "data/train2014",
+    "styleWeight": 1e0,
+    "contentWeight": 1e4,
+    "tvWeight": 1e6,
+    "epoch": 2,
+    "batchSize": 4,
+    "learningRate": 1e-3
 }

@@ -11,7 +11,7 @@ from shutil import rmtree
 import json
 from argparse import ArgumentParser
 from model import TransferModel, FeatureExtractor, get_style_loss, get_content_loss, get_tv_loss
-from utils import read_image, write_image, image_loader, compute_size
+from utils import read_image, write_image, image_loader, optimal_size
 
 DATA_DIR = 'data/train2014'
 
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         rmtree(config['modelPath'])
     os.makedirs(config['modelPath'])
 
-    size = compute_size(config)
+    size = optimal_size(config['styleImagePath'], config['contentImagePath'])
     style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
     test_img = read_image(config['testImagePath'], as_4d_tensor=True, size=size)
 

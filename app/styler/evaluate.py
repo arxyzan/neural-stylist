@@ -11,7 +11,7 @@ import cv2
 import json
 from argparse import ArgumentParser
 from model import TransferModel
-from utils import read_image, write_image, compute_size
+from utils import read_image, write_image, optimal_size
 
 def get_parser():
     parser = ArgumentParser()
@@ -47,14 +47,14 @@ if __name__ == '__main__':
 
     with open(options.config_file) as f:
         config = json.load(f)
-    size = compute_size(config)
+    size = optimal_size(config['styleImagePath'], options.input)
 
     model = TransferModel()
     # init model weight
     ones = tf.ones((1, 256, 256, 3))
     model(ones)
 
-    model.load_weights(config['modelPath'])
+    model.load_weights("{}/weights.h5".format(config['modelPath']))
 
     if options.type == 'image':
         content = read_image(options.input, as_4d_tensor=True, size=size)
