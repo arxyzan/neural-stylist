@@ -26,15 +26,15 @@ TV_WEIGHT = 1e6
 
 def get_parser():
     parser = ArgumentParser()
-    parser.add_argument('--model', type=str,
-                        dest='model', help='model name',
-                        metavar='MODEL', required=True)
+    parser.add_argument('--style', type=str,
+                        dest='style', help='style name',
+                        metavar='STYLE', required=True)
     
     return parser
 
 
 def check_opts(opts):
-    assert os.path.exists("config/{}.json".format(opts.model)), "model config not found!"
+    assert os.path.exists("config/{}.json".format(opts.style)), "model config not found!"
 
 
 def get_progress_bar():
