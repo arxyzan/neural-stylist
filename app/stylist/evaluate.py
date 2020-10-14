@@ -15,10 +15,6 @@ tf.config.experimental.set_memory_growth(gpu, True)
 def get_parser():
     parser = ArgumentParser()
 
-    parser.add_argument('--type', type=str,
-                        dest='type', help='content media type (image or video)', choices=['image', 'video'],
-                        metavar='TYPE', required=True)
-
     parser.add_argument('--style', type=str,
                         dest='style', help='style name',
                         metavar='STYLE', required=True)
@@ -54,42 +50,6 @@ if __name__ == '__main__':
     model(ones)
 
     model.load_weights("{}/weights.h5".format(config['modelPath']))
-
-    if options.type == 'image':
-        content = read_image(options.input, as_4d_tensor=True, size=size)
-        styled_output = model(content)
-        write_image(output_path, styled_output[0] / 255.0)
-
-    elif options.type == 'video':
-        capture = cv2.VideoCapture(options.input)
-        fps = capture.get(cv2.CAP_PROP_FPS)
-        size = (
-            int(capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        )
-        video_writer = cv2.VideoWriter(
-            options.output,
-            cv2.VideoWriter_fourcc("P", "I", "M", "1"),
-            fps,
-            size
-        )
-
-        ret, frame = capture.read()
-        while ret:
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            frame = tf.image.convert_image_dtype(frame, tf.float32)
-            frame = frame[tf.newaxis, ...]
-
-            output = model(frame)
-
-            out_frame = output[0] / 255.0
-            out_frame = tf.clip_by_value(
-                out_frame, clip_value_min=0.0, clip_value_max=1.0)
-            out_frame = tf.image.convert_image_dtype(out_frame, tf.uint8)
-            out_frame = cv2.cvtColor(out_frame.numpy(), cv2.COLOR_RGB2BGR)
-
-            video_writer.write(out_frame)
-            ret, frame = capture.read()
-
-        capture.release()
-        video_writer.release()
+    content = read_image(options.input, as_4d_tensor=True, size=size)
+    styled_output = model(content)
+    write_image(output_path, styled_output[0] / 255.0)
