@@ -1,0 +1,12 @@
+{
+    "styleImagePath": "images/style/dizzy-landscape.jpg",
+    "contentImagePath": "images/content/stata.jpg",
+    "modelPath": "models/dizzy-landscape",
+    "datasetPath": "data/train2014",
+    "styleWeight": 1e0,
+    "contentWeight": 1e4,
+    "tvWeight": 1e6,
+    "epoch": 2,
+    "batchSize": 4,
+    "learningRate": 1e-3
+}
