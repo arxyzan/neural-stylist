@@ -81,7 +81,7 @@ if __name__ == '__main__':
 
     data_size_per_epoch = 4e4
     step = data_size_per_epoch * epoch // batch_size
-    auto_save_step = step // 1000
+    auto_save_step = step // 10
 
     transfer_model = TransferModel()
     feature_extractor = FeatureExtractor()
