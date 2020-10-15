@@ -1,7 +1,6 @@
 {
     "styleImagePath": "images/style/starry-night.jpg",
     "contentImagePath": "images/content/stata.jpg",
-    "modelPath": "models/starry-night",
     "datasetPath": "data/train2014",
     "styleWeight": 1e0,
     "contentWeight": 1e4,

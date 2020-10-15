@@ -58,10 +58,11 @@ if __name__ == '__main__':
     config_path = 'config/{}.json'.format(options.style)
     with open(config_path) as f:
         config = json.load(f)
-
-    if os.path.exists(config['modelPath']):
-        rmtree(config['modelPath'])
-    os.makedirs(config['modelPath'])
+    
+    model_path = "models/{}".format(options.style)
+    if os.path.exists(model_path):
+        rmtree(model_path)
+    os.makedirs(model_path)
 
     size = optimal_size(config['styleImagePath'], config['contentImagePath'])
     style_image = read_image(config['styleImagePath'], as_4d_tensor=True)
@@ -90,7 +91,7 @@ if __name__ == '__main__':
     content_loss_metric = keras.metrics.Mean(name='content_loss')
     tv_loss_metric = keras.metrics.Mean(name='tv_loss')
 
-    summary_writer = tf.summary.create_file_writer(os.path.join(config['modelPath'], 'logs'))
+    summary_writer = tf.summary.create_file_writer(os.path.join(model_path, 'logs'))
 
     bar = get_progress_bar()
 
@@ -135,7 +136,7 @@ if __name__ == '__main__':
 
         if step_counter % auto_save_step == 0:
             test_output = transfer_model(test_img)
-            write_image(os.path.join(config['modelPath'], '{}.jpg'.format(step_counter // auto_save_step)), test_output[0] / 255.0)
+            write_image(os.path.join(model_path, '{}.jpg'.format(step_counter // auto_save_step)), test_output[0] / 255.0)
 
         bar.update(step_counter)
 
@@ -145,5 +146,5 @@ if __name__ == '__main__':
 
     bar.finish()
 
-    transfer_model.save_weights(os.path.join(config['modelPath'], 'weights.h5'))
+    transfer_model.save_weights(os.path.join(model_path, 'weights.h5'))
     

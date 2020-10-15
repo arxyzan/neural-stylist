@@ -49,7 +49,8 @@ if __name__ == '__main__':
     ones = tf.ones((1, 256, 256, 3))
     model(ones)
 
-    model.load_weights("{}/weights.h5".format(config['modelPath']))
+    model_path = "models/{}".format(options.style)
+    model.load_weights("{}/weights.h5".format(model_path))
     content = read_image(options.input, as_4d_tensor=True, size=size)
     styled_output = model(content)
     write_image(output_path, styled_output[0] / 255.0)
