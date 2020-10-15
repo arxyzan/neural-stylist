@@ -1,5 +1,6 @@
 # neural-stylist
 
+Just open the Jupyter notebook on Colab. You can find all details there.
 
 <p align = 'center'>
 <img src = 'app/stylist/images/content/chicago.jpg' height = '246px'>
