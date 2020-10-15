@@ -7,7 +7,7 @@
 <a href = 'app/stylist/images/output/chicago.jpg'><img src = 'app/stylist/output/chicago.jpg' width = '560px'></a>
 </p>
 <p align = 'center'>
-<img src = 'app/stylist/images/content/paris.jpg' height = '246px'>
-<img src = 'app/stylist/images/style/mosaic.jpg' height = '246px'>
+<img src = 'app/stylist/images/content/paris.jpg' width = '275px'>
+<img src = 'app/stylist/images/style/mosaic.jpg' width = '275px'>
 <a href = 'app/stylist/images/output/paris.jpg'><img src = 'app/stylist/output/paris.jpg' width = '560px'></a>
 </p>
