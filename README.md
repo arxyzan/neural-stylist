@@ -1,5 +1,8 @@
 # neural-stylist
 
-![alt text](https://github.com/AryanSh98/neural-stylist/blob/master/app/stylist/images/content/chicago.jpg?raw=true)
-![alt text](https://github.com/AryanSh98/neural-stylist/blob/master/app/stylist/images/style/7-faces.jpg?raw=true)
-![alt text](https://github.com/AryanSh98/neural-stylist/blob/master/app/stylist/images/output/chicago.jpg?raw=true)
+
+<p align = 'center'>
+<img src = 'app/stylist/images/content/chicago.jpg' height = '246px'>
+<img src = 'app/stylist/images/style/7-faces.jpg' height = '246px'>
+<a href = 'app/stylist/images/output/chicago.jpg'><img src = 'examples/results/stata_udnie_header.jpg' width = '627px'></a>
+</p>
